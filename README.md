@@ -8,6 +8,11 @@ This python function generates a completely random Haiku, using syllable data fr
 One word is selected by random, and a PIXABAY API search is done to retrieve associated images.
 The haiku is then overlayed on the image, resulting in an inspirational uplifting poster.. almost?
 
+## TODO's
+- Twitter Bot integration
+- Write unit tests
+- Incorporate Natural Language Processing to make haiku's make syntactical sense and themed.
+
 ## Datasets
 ### Nettalk Corpus Syllable Data Set - 
 - https://rdrr.io/cran/qdapDictionaries/man/DICTIONARY.html
