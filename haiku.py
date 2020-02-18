@@ -137,8 +137,7 @@ class HaikuGenerator:
         return img_name
 
 
-@sched.scheduled_job('interval', minutes=60)
-def start_process() :
+def generate_and_post_tweet():
     try:
         twt_api.verify_credentials()
         print("Valid Twitter credentials!")
@@ -159,5 +158,11 @@ def start_process() :
 
     except:
         print("Invalid Twitter credentials..")
+
+
+@sched.scheduled_job('interval', minutes=60)
+def start_process():
+    generate_and_post_tweet()
+
 
 sched.start()
