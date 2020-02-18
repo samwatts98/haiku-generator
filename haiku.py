@@ -12,11 +12,11 @@ import tweepy
 PIXABAY_URL = 'https://pixabay.com/api/'
 PIXABAY_KEY = os.environ.get('PIXABAY_KEY')
 
-SYLLABLE_FILE = "../syllables.p"
+SYLLABLE_FILE = "syllables.p"
 DATA_FILE = "nettalk.data"
 COMMON_WORDS_FILE = "common-words.txt"
 FONT_STYLE = 'Raleway-Light.ttf'
-OUTPUT_DIR = "../imgs/"
+OUTPUT_DIR = "./imgs/"
 
 MR_PEANUT = "https://i.ytimg.com/vi/fkKEVt3f5Vo/maxresdefault.jpg"
 
@@ -24,7 +24,6 @@ TWT_API_KEY = os.environ.get('TWT_API_KEY')
 TWT_API_SECRET = os.environ.get('TWT_API_SECRET')
 TWT_ACCESS_KEY = os.environ.get('TWT_ACCESS_KEY')
 TWT_ACCESS_SECRET = os.environ.get('TWT_ACCESS_SECRET')
-
 FONT_SIZE = 80
 FONT = ImageFont.truetype(FONT_STYLE, size=FONT_SIZE)
 EXCLAMATIONS = ['.', '?', '!', '...']
@@ -34,6 +33,7 @@ twitter_auth.set_access_token(TWT_ACCESS_KEY, TWT_ACCESS_SECRET)
 twt_api = tweepy.API(twitter_auth)
 
 sched = BlockingScheduler()
+
 
 def centered_random(x):
     section = x / 3
