@@ -164,5 +164,5 @@ def generate_and_post_tweet():
 def start_process():
     generate_and_post_tweet()
 
-
+generate_and_post_tweet()
 sched.start()
