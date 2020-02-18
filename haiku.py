@@ -2,12 +2,12 @@ import json
 import os
 import random as rnd
 import re
-import textwrap
 from io import BytesIO
 from pickle import dump, load
 
 import requests
 from PIL import Image, ImageDraw, ImageFont
+import tweepy
 
 PIXABAY_URL = 'https://pixabay.com/api/'
 PIXABAY_KEY = os.getenv('PIXABAY_KEY')
@@ -20,13 +20,23 @@ OUTPUT_DIR = "../imgs/"
 
 MR_PEANUT = "https://i.ytimg.com/vi/fkKEVt3f5Vo/maxresdefault.jpg"
 
+TWT_API_KEY = os.getenv('TWT_API_KEY')
+TWT_API_SECRET = os.getenv('TWT_API_SECRET')
+TWT_ACCESS_KEY = os.getenv('TWT_ACCESS_KEY')
+TWT_ACCESS_SECRET = os.getenv('TWT_ACCESS_SECRET')
+
 FONT_SIZE = 80
 FONT = ImageFont.truetype(FONT_STYLE, size=FONT_SIZE)
+EXCLAMATIONS = ['.', '?', '!', '...']
+
+twitter_auth = tweepy.OAuthHandler(TWT_API_KEY, TWT_API_SECRET)
+twitter_auth.set_access_token(TWT_ACCESS_KEY, TWT_ACCESS_SECRET)
+twt_api = tweepy.API(twitter_auth)
 
 
 def centered_random(x):
     section = x / 3
-    return round(rnd.randint(0, round(x - section)) + section / 6)
+    return round(rnd.randint(0, round(x - section)) + section / 10)
 
 
 def get_image(keyword, range=3):
@@ -90,18 +100,15 @@ class HaikuGenerator:
 
         results = dict()
         results['num_words'] = [len(line) for line in result]
-        results['haiku'] = ', '.join([' '.join(line) for line in result])
+        haiku_string = ', '.join([' '.join(line) for line in result])
+        results['haiku'] = haiku_string + EXCLAMATIONS[rnd.randint(0, len(EXCLAMATIONS) - 1)]
 
         words = results['haiku'].replace(',', '').split()
         results['img_word'] = words[rnd.randint(0, len(words) - 1)]
         results['img_url'] = get_image(results['img_word'])
         return results
 
-    def generate_tweet(self, font, font_size):
-        haiku_data = self.generate_haiku()
-        while not haiku_data['img_url']:
-            haiku_data = self.generate_haiku()
-
+    def generate_img(self, haiku_data, font, font_size):
         if rnd.randint(0, 100) > 95:
             img = Image.open(BytesIO(requests.get(MR_PEANUT).content))
         else:
@@ -110,20 +117,42 @@ class HaikuGenerator:
         poem = haiku_data['haiku']
         img_size = img.size
         draw = ImageDraw.Draw(img)
-        text_height_pos = centered_random(img_size[1])
 
         pixels = img.getdata()
         average_rgb = [sum(rgb) / len(rgb) for rgb in zip(*pixels)]
         text_color = "#FFFFFF" if all(map(lambda x: x < 125, average_rgb)) else "#000000"
 
-        for line in textwrap.wrap(poem, width=round(img_size[0] * 2 / font_size)):
+        text_height_pos = centered_random(img_size[1])
+
+        poem_lines = poem.split(",")
+        for idx, line in enumerate(poem_lines):
+            line = line.strip()
+            line = line + "," if idx != len(poem_lines) - 1 else line
             draw.text((20, text_height_pos), line, fill=text_color, font=font)
             text_height_pos += font.getsize(line)[1]
 
-        img_name = poem[:10].replace(" ", "").replace(",", "")
-        img.save(OUTPUT_DIR + img_name + str(rnd.randint(1, 100)) + ".jpg")
-        return img
+        img_name = OUTPUT_DIR + poem[:10].replace(" ", "").replace(",", "") + str(rnd.randint(1, 100)) + ".jpg"
+        img.save(img_name)
+        return img_name
 
 
-generator = HaikuGenerator()
-generator.generate_tweet(FONT, FONT_SIZE)
+try:
+    twt_api.verify_credentials()
+    print("Valid Twitter credentials!")
+
+    generator = HaikuGenerator()
+
+    haiku_data = generator.generate_haiku()
+    while not haiku_data['img_url']:
+        haiku_data = generator.generate_haiku()
+
+    tweet_img_name = generator.generate_img(haiku_data, FONT, FONT_SIZE)
+
+    media_upload = twt_api.media_upload(tweet_img_name)
+    print("Successfully uploaded Image data!")
+
+    twt_api.update_status(status=haiku_data['haiku'], media_ids=[media_upload.media_id_string])
+    print("Successfully posted tweet!")
+
+except:
+    print("Invalid Twitter credentials..")
