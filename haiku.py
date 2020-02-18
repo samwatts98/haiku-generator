@@ -4,7 +4,7 @@ import random as rnd
 import re
 from io import BytesIO
 from pickle import dump, load
-
+from apscheduler.schedulers.blocking import BlockingScheduler
 import requests
 from PIL import Image, ImageDraw, ImageFont
 import tweepy
@@ -33,6 +33,7 @@ twitter_auth = tweepy.OAuthHandler(TWT_API_KEY, TWT_API_SECRET)
 twitter_auth.set_access_token(TWT_ACCESS_KEY, TWT_ACCESS_SECRET)
 twt_api = tweepy.API(twitter_auth)
 
+sched = BlockingScheduler()
 
 def centered_random(x):
     section = x / 3
@@ -136,23 +137,27 @@ class HaikuGenerator:
         return img_name
 
 
-try:
-    twt_api.verify_credentials()
-    print("Valid Twitter credentials!")
+@sched.scheduled_job('interval', minutes=60)
+def start_process() :
+    try:
+        twt_api.verify_credentials()
+        print("Valid Twitter credentials!")
 
-    generator = HaikuGenerator()
+        generator = HaikuGenerator()
 
-    haiku_data = generator.generate_haiku()
-    while not haiku_data['img_url']:
         haiku_data = generator.generate_haiku()
+        while not haiku_data['img_url']:
+            haiku_data = generator.generate_haiku()
 
-    tweet_img_name = generator.generate_img(haiku_data, FONT, FONT_SIZE)
+        tweet_img_name = generator.generate_img(haiku_data, FONT, FONT_SIZE)
 
-    media_upload = twt_api.media_upload(tweet_img_name)
-    print("Successfully uploaded Image data!")
+        media_upload = twt_api.media_upload(tweet_img_name)
+        print("Successfully uploaded Image data!")
 
-    twt_api.update_status(status=haiku_data['haiku'], media_ids=[media_upload.media_id_string])
-    print("Successfully posted tweet!")
+        twt_api.update_status(status=haiku_data['haiku'], media_ids=[media_upload.media_id_string])
+        print("Successfully posted tweet!")
 
-except:
-    print("Invalid Twitter credentials..")
+    except:
+        print("Invalid Twitter credentials..")
+
+sched.start()
