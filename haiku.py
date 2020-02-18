@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 import tweepy
 
 PIXABAY_URL = 'https://pixabay.com/api/'
-PIXABAY_KEY = os.getenv('PIXABAY_KEY')
+PIXABAY_KEY = os.environ.get('PIXABAY_KEY')
 
 SYLLABLE_FILE = "../syllables.p"
 DATA_FILE = "nettalk.data"
@@ -20,10 +20,10 @@ OUTPUT_DIR = "../imgs/"
 
 MR_PEANUT = "https://i.ytimg.com/vi/fkKEVt3f5Vo/maxresdefault.jpg"
 
-TWT_API_KEY = os.getenv('TWT_API_KEY')
-TWT_API_SECRET = os.getenv('TWT_API_SECRET')
-TWT_ACCESS_KEY = os.getenv('TWT_ACCESS_KEY')
-TWT_ACCESS_SECRET = os.getenv('TWT_ACCESS_SECRET')
+TWT_API_KEY = os.environ.get('TWT_API_KEY')
+TWT_API_SECRET = os.environ.get('TWT_API_SECRET')
+TWT_ACCESS_KEY = os.environ.get('TWT_ACCESS_KEY')
+TWT_ACCESS_SECRET = os.environ.get('TWT_ACCESS_SECRET')
 
 FONT_SIZE = 80
 FONT = ImageFont.truetype(FONT_STYLE, size=FONT_SIZE)
@@ -138,18 +138,42 @@ class HaikuGenerator:
 
 
 def generate_and_post_tweet():
+    global generator, haiku_data, tweet_img_name
     try:
         twt_api.verify_credentials()
         print("Valid Twitter credentials!")
 
-        generator = HaikuGenerator()
+    except:
+        print("Invalid Twitter credentials..")
+        exit()
 
+    try:
+        generator = HaikuGenerator()
+        print("Created Haiku Generator!")
+
+    except:
+        print("Failed to create Generator..")
+        exit()
+
+    try:
         haiku_data = generator.generate_haiku()
         while not haiku_data['img_url']:
             haiku_data = generator.generate_haiku()
+        print("Generated Haiku!")
 
+    except:
+        print("Failed to generate Haiku..")
+        exit()
+
+    try:
         tweet_img_name = generator.generate_img(haiku_data, FONT, FONT_SIZE)
+        print(f"Created image: {tweet_img_name}")
 
+    except:
+        print("Failed to create image..")
+        exit()
+
+    try:
         media_upload = twt_api.media_upload(tweet_img_name)
         print("Successfully uploaded Image data!")
 
@@ -157,12 +181,14 @@ def generate_and_post_tweet():
         print("Successfully posted tweet!")
 
     except:
-        print("Invalid Twitter credentials..")
+        print("Failed to post tweet..")
+        exit()
 
 
 @sched.scheduled_job('interval', minutes=60)
 def start_process():
     generate_and_post_tweet()
+
 
 generate_and_post_tweet()
 sched.start()
