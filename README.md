@@ -9,7 +9,7 @@ One word is selected by random, and a PIXABAY API search is done to retrieve ass
 The haiku is then overlayed on the image, resulting in an inspirational uplifting poster.. almost?
 
 ## TODO's
-- Twitter Bot integration
+- Twitter Bot integration ✔️
 - Write unit tests
 - Incorporate Natural Language Processing to make haiku's make syntactical sense and themed.
 
