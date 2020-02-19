@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import json
 import os
 import random as rnd
@@ -19,6 +21,7 @@ FONT_STYLE = 'Raleway-Light.ttf'
 OUTPUT_DIR = "./imgs/"
 
 MR_PEANUT = "https://i.ytimg.com/vi/fkKEVt3f5Vo/maxresdefault.jpg"
+MR_PEANUT_GOES_TO_WAR = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Mr._Peanut_Goes_to_War.jpg/800px-Mr._Peanut_Goes_to_War.jpg";
 
 TWT_API_KEY = os.environ.get('TWT_API_KEY')
 TWT_API_SECRET = os.environ.get('TWT_API_SECRET')
@@ -110,7 +113,10 @@ class HaikuGenerator:
         return results
 
     def generate_img(self, haiku_data, font, font_size):
-        if rnd.randint(0, 100) > 95:
+        roll_result = rnd.randint(0, 100)
+        if roll_result < 2:
+            img = Image.open(BytesIO(requests.get(MR_PEANUT_GOES_TO_WAR).content))
+        elif roll_result < 5:
             img = Image.open(BytesIO(requests.get(MR_PEANUT).content))
         else:
             img = Image.open(BytesIO(requests.get(haiku_data['img_url']).content))
