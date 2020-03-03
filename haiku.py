@@ -21,7 +21,8 @@ FONT_STYLE = 'Raleway-Light.ttf'
 OUTPUT_DIR = "./imgs/"
 
 MR_PEANUT = "https://i.ytimg.com/vi/fkKEVt3f5Vo/maxresdefault.jpg"
-MR_PEANUT_GOES_TO_WAR = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Mr._Peanut_Goes_to_War.jpg/800px-Mr._Peanut_Goes_to_War.jpg";
+MR_PEANUT_GOES_TO_WAR = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Mr._Peanut_Goes_to_War.jpg/800px-Mr._Peanut_Goes_to_War.jpg"
+MR_PEANUT_GOES_INTERNATIONAL = "https://upload.wikimedia.org/wikipedia/commons/d/d9/Mr._Peanut_balloon_lands_in_children%27s_park.jpg"
 
 TWT_API_KEY = os.environ.get('TWT_API_KEY')
 TWT_API_SECRET = os.environ.get('TWT_API_SECRET')
@@ -113,10 +114,12 @@ class HaikuGenerator:
         return results
 
     def generate_img(self, haiku_data, font, font_size):
-        roll_result = rnd.randint(0, 100)
-        if roll_result < 2:
+        roll_result = rnd.randint(0, 1000)
+        if roll_result < 1:
+            img = Image.open(BytesIO(requests.get(MR_PEANUT_GOES_INTERNATIONAL).content))
+        elif roll_result < 10:
             img = Image.open(BytesIO(requests.get(MR_PEANUT_GOES_TO_WAR).content))
-        elif roll_result < 5:
+        elif roll_result < 50:
             img = Image.open(BytesIO(requests.get(MR_PEANUT).content))
         else:
             img = Image.open(BytesIO(requests.get(haiku_data['img_url']).content))
