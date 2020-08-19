@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import json
 import os
 import random as rnd
@@ -10,24 +8,28 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 import requests
 from PIL import Image, ImageDraw, ImageFont
 import tweepy
+from dotenv import load_dotenv
+
+load_dotenv()
 
 PIXABAY_URL = 'https://pixabay.com/api/'
-PIXABAY_KEY = os.environ.get('PIXABAY_KEY')
+PIXABAY_KEY = os.getenv('PIXABAY_KEY')
 
 SYLLABLE_FILE = "syllables.p"
 DATA_FILE = "nettalk.data"
 COMMON_WORDS_FILE = "common-words.txt"
 FONT_STYLE = 'Raleway-Light.ttf'
-OUTPUT_DIR = "./imgs/"
+
+
+OUTPUT_DIR_IMGS = "./imgs/"
+OUTPUT_DIR_JSON = "./out/"
 
 MR_PEANUT = "https://i.ytimg.com/vi/fkKEVt3f5Vo/maxresdefault.jpg"
-MR_PEANUT_GOES_TO_WAR = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Mr._Peanut_Goes_to_War.jpg/800px-Mr._Peanut_Goes_to_War.jpg"
-MR_PEANUT_GOES_INTERNATIONAL = "https://upload.wikimedia.org/wikipedia/commons/d/d9/Mr._Peanut_balloon_lands_in_children%27s_park.jpg"
 
-TWT_API_KEY = os.environ.get('TWT_API_KEY')
-TWT_API_SECRET = os.environ.get('TWT_API_SECRET')
-TWT_ACCESS_KEY = os.environ.get('TWT_ACCESS_KEY')
-TWT_ACCESS_SECRET = os.environ.get('TWT_ACCESS_SECRET')
+TWT_API_KEY = os.getenv('TWT_API_KEY')
+TWT_API_SECRET = os.getenv('TWT_API_SECRET')
+TWT_ACCESS_KEY = os.getenv('TWT_ACCESS_KEY')
+TWT_ACCESS_SECRET = os.getenv('TWT_ACCESS_SECRET')
 FONT_SIZE = 80
 FONT = ImageFont.truetype(FONT_STYLE, size=FONT_SIZE)
 EXCLAMATIONS = ['.', '?', '!', '...']
@@ -37,24 +39,6 @@ twitter_auth.set_access_token(TWT_ACCESS_KEY, TWT_ACCESS_SECRET)
 twt_api = tweepy.API(twitter_auth)
 
 sched = BlockingScheduler()
-
-
-def centered_random(x):
-    section = x / 3
-    return round(rnd.randint(0, round(x - section)) + section / 10)
-
-
-def get_image(keyword, range=3):
-    response = requests.get(PIXABAY_URL, {
-        'key': PIXABAY_KEY,
-        'q': keyword, 'per_page': range
-    })
-
-    data = json.loads(response.text)
-    if len(data['hits']) < 1:
-        return ""
-
-    return data['hits'][rnd.randint(0, len(data['hits']) - 1)]['largeImageURL']
 
 
 class HaikuGenerator:
@@ -114,12 +98,7 @@ class HaikuGenerator:
         return results
 
     def generate_img(self, haiku_data, font, font_size):
-        roll_result = rnd.randint(0, 1000)
-        if roll_result < 1:
-            img = Image.open(BytesIO(requests.get(MR_PEANUT_GOES_INTERNATIONAL).content))
-        elif roll_result < 10:
-            img = Image.open(BytesIO(requests.get(MR_PEANUT_GOES_TO_WAR).content))
-        elif roll_result < 50:
+        if rnd.randint(0, 100) > 95:
             img = Image.open(BytesIO(requests.get(MR_PEANUT).content))
         else:
             img = Image.open(BytesIO(requests.get(haiku_data['img_url']).content))
@@ -141,9 +120,15 @@ class HaikuGenerator:
             draw.text((20, text_height_pos), line, fill=text_color, font=font)
             text_height_pos += font.getsize(line)[1]
 
-        img_name = OUTPUT_DIR + poem[:10].replace(" ", "").replace(",", "") + str(rnd.randint(1, 100)) + ".jpg"
+        img_name = OUTPUT_DIR_IMGS + poem[:10].replace(" ", "").replace(",", "") + str(rnd.randint(1, 100)) + ".txt"
         img.save(img_name)
         return img_name
+
+    def save_haiku_json(self, haiku_data):
+        output = OUTPUT_DIR_JSON + haiku_data['haiku'][:10].replace(" ", "").replace(",", "") + str(rnd.randint(1, 100)) + ".json"
+        with open(output, 'w') as outfile:
+            json.dump(haiku_data, outfile)
+            print("Saved to: " + output)
 
 
 def generate_and_post_tweet():
@@ -177,27 +162,45 @@ def generate_and_post_tweet():
     try:
         tweet_img_name = generator.generate_img(haiku_data, FONT, FONT_SIZE)
         print(f"Created image: {tweet_img_name}")
+		generator.save_haiku_json(haiku_data)
 
     except:
         print("Failed to create image..")
         exit()
 
-    try:
-        media_upload = twt_api.media_upload(tweet_img_name)
-        print("Successfully uploaded Image data!")
-
-        twt_api.update_status(status=haiku_data['haiku'], media_ids=[media_upload.media_id_string])
-        print("Successfully posted tweet!")
-
-    except:
-        print("Failed to post tweet..")
-        exit()
+    post_tweet(haiku_data['haiku'], tweet_img_name)
 
 
-@sched.scheduled_job('interval', minutes=60)
+def centered_random(x):
+    section = x / 3
+    return round(rnd.randint(0, round(x - section)) + section / 10)
+
+
+def get_image(keyword, range=3):
+    response = requests.get(PIXABAY_URL, {
+        'key': PIXABAY_KEY,
+        'q': keyword, 'per_page': range
+    })
+
+    data = json.loads(response.text)
+    if len(data['hits']) < 1:
+        return ""
+
+    return data['hits'][rnd.randint(0, len(data['hits']) - 1)]['largeImageURL']
+
+
+def post_tweet(haiku_text, img_name):
+    media_upload = twt_api.media_upload(img_name)
+    print("Successfully uploaded Image data!")
+
+    twt_api.update_status(status=haiku_text, media_ids=[media_upload.media_id_string])
+    print("Successfully posted tweet!")
+
+
+
+ @sched.scheduled_job('interval', minutes=60)
 def start_process():
     generate_and_post_tweet()
-
-
 generate_and_post_tweet()
+
 sched.start()
